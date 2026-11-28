@@ -3,6 +3,7 @@ package com.devsuperior.dscommerce.service;
 import com.devsuperior.dscommerce.dto.ProductDTO;
 import com.devsuperior.dscommerce.entities.Product;
 import com.devsuperior.dscommerce.repository.ProductRepository;
+import com.devsuperior.dscommerce.service.exceptions.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,9 +23,9 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductDTO findById(Long id) {
-        Optional<Product> result = productRepository.findById(id);
-        Product product = result.get();
-        return new ProductDTO(product);
+            Product result = productRepository.findById(id).orElseThrow(
+                    () -> new ResourceNotFoundException("Recurso nao encontrado"));
+            return new ProductDTO(result);
     }
 
 
@@ -38,13 +39,28 @@ public class ProductService {
     @Transactional
     public ProductDTO insert(ProductDTO productDTO) {
         Product entity = new Product();
+        copyDtoToEntity(productDTO, entity);
+        entity = productRepository.save(entity);
+        return new ProductDTO(entity);
+    }
+
+    @Transactional
+    public ProductDTO update(Long id, ProductDTO productDTO) {
+        Product entity = productRepository.getReferenceById(id);
+        copyDtoToEntity(productDTO, entity);
+        entity = productRepository.save(entity);
+        return new ProductDTO(entity);
+    }
+    @Transactional
+    public void delete(Long id) {
+        productRepository.deleteById(id);
+    }
+
+    private void copyDtoToEntity(ProductDTO productDTO, Product entity) {
         entity.setName(productDTO.getName());
         entity.setDescription(productDTO.getDescription());
         entity.setPrice(productDTO.getPrice());
         entity.setImgUrl(productDTO.getImgUrl());
-
-        entity = productRepository.save(entity);
-        return new ProductDTO(entity);
     }
 
 }
